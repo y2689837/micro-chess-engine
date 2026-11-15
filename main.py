@@ -1,94 +1,121 @@
 import os,json,urllib.request as U
+E=os.environ
 KN=(-33,-31,-18,-14,14,18,31,33)
 KD=(-17,-16,-15,-1,1,15,16,17)
 BD=(-17,-15,15,17)
-RD=(-16,-1,1,16)
-MT=(0,100,300,320,500,950,0)
-PS=("OOOOhhhhTTY^QQT[OOOYQMJOQTTEOOOO",
-"6;@@;EOO@OTW@QWY@OWY@QTW;EOT6;@@",
-"",
-"OOOOQTTTMOOOMOOOMOOOMOOOMOOOOOOQ","","@;;6@;;6@;;6E@@;JEEETYYOY^^TY^TO")
+MV=(0,100,300,320,500,900,0)
 CM={116:12,119:14,112:13,4:3,7:11,0:7}
-E=os.environ
 B=[0]*128;KP={}
-N=STOP=0
-BUD=int(E.get("BOT_BUDGET",45000))
+BUD=int(E.get("BOT_BUDGET",60000))
+TT={};KL={};PTH=[];REP=set()
+X=Exception
 def att(s,by):
  for ds,v in ((15*by,17*by),1),(KN,2),(KD,6):
   for o in ds:
    if not (s+o)&136 and B[s+o]==v*by:return 1
  for o in KD:
   t=s+o
-  while not t&136:
-   p=B[t]
-   if p:
-    if p//by in (5,3 if o in BD else 4):return 1
-    break
-   t+=o
- return 0
+  while not t&136 and not B[t]:t+=o
+  if not t&136 and B[t]//by in (5,3 if o in BD else 4):return 1
 def gen(cap):
  ms=[];ap=ms.append
- for s in range(128):
-  p=B[s]
+ for s,p in enumerate(B):
   if p*W<=0:continue
   a=abs(p)
   if a==1:
-   d=-16*W;pr,sr=(0,6) if W>0 else (7,1)
-   def pm(t):
-    for q in (5,4,3,2):ap(s|t<<7|q<<14)
-   t=s+d
-   if not B[t]:
-    if t>>4==pr:pm(t)
-    elif not cap:
-     ap(s|t<<7)
-     if (s>>4)==sr and not B[s+2*d]:ap(s|(s+2*d)<<7)
-   for dd in (d-1,d+1):
-    t=s+dd
+   d=-16*W
+   for o in (d-1,d,d+1):
+    t=s+o
     if t&136:continue
-    if B[t]*W<0:pm(t) if t>>4==pr else ap(s|t<<7)
-    elif t==EP:ap(s|t<<7|1<<17)
+    v=B[t]
+    if o==d:
+     if v:continue
+    elif v*W>=0 and t!=EP:continue
+    if t>>4 in (0,7):
+     for q in (5,4,3,2):ap(s|t<<7|q<<14)
+    elif o!=d or not cap:
+     ap(s|t<<7)
+     if o==d and s>>4 in (1,6) and not B[s+2*d]:ap(s|(s+2*d)<<7)
   else:
-   sl=2<a<6
-   for o in ((),(),KN,BD,RD,KD,KD)[a]:
+   for o in (KN,BD,(1,16,-1,-16),KD,KD)[a-2]:
     t=s+o
     while not t&136:
-     if B[t]:
-      if B[t]*W<0:ap(s|t<<7)
-      break
-     if not cap:ap(s|t<<7)
-     if not sl:break
+     v=B[t]
+     if v*W<0 or not (v or cap):ap(s|t<<7)
+     if v or a in (2,6):break
      t+=o
    if a==6 and not cap:
-    kh=60+56*W
-    for dd,bt in (1,1),(-1,2):
-     if CA&(bt*4**(W<0)) and not B[kh+dd] and not B[kh+2*dd] and (dd>0 or not B[kh+3*dd]) and B[kh+(3+(dd<0))*dd]==4*W and all(not att(kh+i*dd,-W) for i in (0,1,2)):ap(s|(kh+2*dd)<<7)
+    for dd,bt in ((2,1),(-2,2)):
+     if CA&(bt*4**(W<0)) and not (B[s+dd//2] or B[s+dd] or dd<0 and B[s-3]) and not att(s,-W) and not att(s+dd//2,-W):ap(s|(s+dd)<<7)
  return ms
-def push(m):
+def mk(m):
  global W,CA,EP
- s=m&127;t=m>>7&127;pr=m>>14&7;ef=m>>17
- old=(B[:],CA,EP,W,KP[1],KP[-1])
- p=B[s]
- cp=B[t] if not ef else -W
- if cp:B[t if not ef else t+16*W]=0
- B[s]=0
- B[t]=pr*W if pr else p
- if p==6*W:
+ s=m&127;t=(m>>7)&127;p=B[s];a=abs(p)
+ u=(B[:],CA,EP,KP[1],KP[-1])
+ if a==1 and t==EP:B[t+16*W]=0
+ B[s]=0;B[t]=((m>>14)or p//W)*W
+ if a==6:
   KP[W]=t
   if abs(t-s)==2:
-   rs,rt=(s+3,s+1) if t>s else (s-4,s-1)
-   B[rt]=B[rs];B[rs]=0
- CA &= CM.get(s,15)&CM.get(t,15)
- EP=(s+t)//2 if p==W and abs(t-s)==32 else -1
+   r=(s+3,s-4)[t<s];B[(s+t)//2]=B[r];B[r]=0
+ CA&=CM.get(s,15)&CM.get(t,15)
+ EP=(s+t)//2 if a==1 and abs(t-s)==32 else -1
  W=-W
- return old
-def pop(tk):
- global B,W,CA,EP
- B,CA,EP,W,KP[1],KP[-1]=tk
+ return u
+def ev():
+ e=0
+ for s,p in enumerate(B):
+  if p:
+   a=abs(p);r=(s>>4)^7*(p>0);cf=min(s&7,7-s&7);c=cf+min(r,7-r)
+   e+=(MV[a]+(3*r*r//2+2*r,9*c,7*c,3*cf+15*(r==6),3*c,-6*min(r,3)-4*c)[a-1])*(p//a)
+ return e*W
+def sk(m,tm,ply):
+ if m==tm:return 1<<28
+ t=(m>>7)&127;v=B[t]
+ if v or m>>14 or t==EP:return (1<<24)+((MV[abs(v)] or MV[m>>14] or 100)*16-MV[abs(B[m&127])]//16)
+ return (1<<20) if m in KL.get(ply,()) else 0
+def neg(d,a,b,ply):
+ global ND,TB,W,CA,EP
+ ND+=1
+ if ND>=BUD:raise X
+ k=(tuple(B),W,CA,EP)
+ if ply and (k in PTH or k in REP):return 0
+ ent=TT.get(k);tm=ent and ent[3]
+ if ent and ply and ent[0]>=d:
+  v,f=ent[1],ent[2]
+  if f==0:return v
+  if f==1:a=max(a,v)
+  else:b=min(b,v)
+  if a>=b:return v
+ a0=a;bst=-10**6
+ ic=d<=0 and att(KP[W],-W)
+ if d<=0 and not ic:
+  bst=ev()
+  if bst>=b:return bst
+  a=max(a,bst)
+ PTH.append(k)
+ for m in sorted(gen(d<=0 and not ic),key=lambda m:-sk(m,tm,ply)):
+  u=mk(m)
+  if att(KP[-W],W):
+   B[:],CA,EP,KP[1],KP[-1]=u;W=-W;continue
+  v=-neg(d-1,-b,-a,ply+1)
+  B[:],CA,EP,KP[1],KP[-1]=u;W=-W
+  if v>bst:bst=v;bm=m
+  a=max(a,v)
+  if a>=b:
+   if d>0:
+    t=(m>>7)&127
+    if not B[t] and m<16384 and t!=EP:KL[ply]=[m]+KL.get(ply,[])[:1]
+   break
+ PTH.pop()
+ if bst==-10**6:return -100000+ply if att(KP[W],-W) else 0
+ if not ply:TB=bm
+ if d>0:TT[k]=(d,bst,(bst<=a0)*2+(bst>=b),bm)
+ return bst
 def parse(f):
- global B,W,CA,EP
- B=[0]*128;CA=0;EP=-1
- f=f.split()
- s=0
+ global W,CA,EP
+ B[:]=[0]*128;CA=0;EP=-1
+ f=f.split();s=0
  for ch in f[0]:
   if ch=="/":s+=8
   elif ch.isdigit():s+=int(ch)
@@ -96,69 +123,31 @@ def parse(f):
    p="PNBRQK".find(ch.upper())+1
    if ch.islower():p=-p
    B[s]=p
-   if abs(p)==6:KP[(p>0)-(p<0)]=s
+   if p*p==36:KP[p//6]=s
    s+=1
- W=1 if f[1]=="w" else -1
+ W=1-2*(f[1]=="b")
  for i in range(4):
   if "KQkq"[i] in f[2]:CA|=1<<i
  if f[3]!="-":EP=(8-int(f[3][1]))*16+ord(f[3][0])-97
-def uci(m):
- s=m&127;t=m>>7&127
- r=chr(97+(s&7))+str(8-(s>>4))+chr(97+(t&7))+str(8-(t>>4))
- if m>>14&7:r+="  nbrq"[m>>14&7]
- return r
-def ev():
- sc=0
- for s in range(128):
-  p=B[s]
-  if p:
-   r=s>>4;f=s&7;a=abs(p)
-   v=MT[a]+((ord(PS[a-1][(r if p>0 else 7-r)*4+min(f,7-f)])-79)*2 if a in (1,2,4) else 0)
-   sc+=v if p>0 else -v
- return sc*W
-def neg(d,ply,a,b):
- global N,STOP,TB
- if STOP:return 0
- N+=1;STOP=N>=BUD
- if d<=0:
-  st=ev()
-  if st>=b:return b
-  a=max(a,st)
- ms=gen(d<=0)
- ms.sort(key=lambda m:-MT[abs(B[(m>>7)&127])])
- bst=-999999;bm=0
- for m in ms:
-  tk=push(m)
-  if att(KP[-W],W):pop(tk);continue
-  s=-neg(d-1,ply+1,-b,-a)
-  pop(tk)
-  if STOP:return bst if bm else a if d<=0 else 0
-  if s>bst:
-   bst=s;bm=m
-   if ply==0:TB=m
-  if s>a:a=s
-  if a>=b:return b if d<=0 else bst
- if not bm and d>0:return -100000+ply if att(KP[W],-W) else 0
- return a if d<=0 else bst
-def find():
- global N,STOP,TB
- N=STOP=TB=0;bm=0
- for d in range(1,64):
-  neg(d,0,-999999,999999)
-  if STOP or not TB:break
-  bm=TB
- return bm
 OP=U.build_opener(U.ProxyHandler({}))
+S="status"
 def post(p,o):
- with OP.open(U.Request(E["MAKEFUN_ENV_URL"]+p,data=json.dumps(o).encode())) as r:return json.loads(r.read())
+ return json.loads(OP.open(U.Request(E["MAKEFUN_ENV_URL"]+p,data=json.dumps(o).encode())).read())
 def main():
- g=post("/game",{})
- while g.get("status")!="done":
-  while g.get("status")=="your_move":
-   parse(g["fen"])
-   m=find()
-   u=uci(m)
-   if u not in g["legal_moves"]:u=g["legal_moves"][0]
-   g=post("/move",{"game":g["game"],"move":u})
-  g=post("/game",{})
+ global ND,TB
+ G=None;g={}
+ while g.get(S)!="done":
+  if g.get(S)!="your_move":
+   g=post("/game",{});continue
+  gm=g["game"];lm=g["legal_moves"]
+  if gm!=G:G=gm;REP.clear()
+  parse(g["fen"]);REP.add((tuple(B),W,CA,EP))
+  ND=TB=0;TT.clear();PTH.clear()
+  for d in range(1,80):
+   try:neg(d,-10**6,10**6,0)
+   except X:break
+  m=TB;s=m&127;t=(m>>7)&127
+  u=chr(97+(s&7))+str(8-s//16)+chr(97+(t&7))+str(8-t//16)+("  nbrq"[m>>14] if m>>14 else "")
+  if u not in lm:u=lm[0]
+  g=post("/move",{"game":gm,"move":u})
 if __name__=="__main__":main()
