@@ -4,19 +4,18 @@ KN=(-33,-31,-18,-14,14,18,31,33)
 KD=(-17,-16,-15,-1,1,15,16,17)
 BD=(-17,-15,15,17)
 MV=(0,100,300,320,500,900,0)
+RK=(1,-1,16,-16)
 CM={116:12,119:14,112:13,4:3,7:11,0:7}
 B=[0]*128;KP={}
-BUD=int(E.get("BOT_BUDGET",60000))
-TT={};KL={};PTH=[];REP=set()
-X=Exception
+BUD=60000
+TT={};KL={};PTH=[];REP=set();HS={}
 def att(s,by):
- for ds,v in ((15*by,17*by),1),(KN,2),(KD,6):
+ for ds,v in ((15*by,17*by),1),(KN,2),(BD,3),(RK,4),(KD,5),(KD,6):
   for o in ds:
-   if not (s+o)&136 and B[s+o]==v*by:return 1
- for o in KD:
-  t=s+o
-  while not t&136 and not B[t]:t+=o
-  if not t&136 and B[t]//by in (5,3 if o in BD else 4):return 1
+   t=s
+   while not (t:=t+o)&136:
+    if B[t]==v*by:return 1
+    if B[t] or v<3 or v==6:break
 def gen(cap):
  ms=[];ap=ms.append
  for s,p in enumerate(B):
@@ -73,11 +72,11 @@ def sk(m,tm,ply):
  if m==tm:return 1<<28
  t=(m>>7)&127;v=B[t]
  if v or m>>14 or t==EP:return (1<<24)+((MV[abs(v)] or MV[m>>14] or 100)*16-MV[abs(B[m&127])]//16)
- return (1<<20) if m in KL.get(ply,()) else 0
+ return (1<<20) if m in KL.get(ply,()) else min(HS.get(m,0),1<<19)
 def neg(d,a,b,ply):
  global ND,TB,W,CA,EP
  ND+=1
- if ND>=BUD:raise X
+ if ND>=BUD:1/0
  k=(tuple(B),W,CA,EP)
  if ply and (k in PTH or k in REP):return 0
  ent=TT.get(k);tm=ent and ent[3]
@@ -105,7 +104,7 @@ def neg(d,a,b,ply):
   if a>=b:
    if d>0:
     t=(m>>7)&127
-    if not B[t] and m<16384 and t!=EP:KL[ply]=[m]+KL.get(ply,[])[:1]
+    if not B[t] and m<16384 and t!=EP:KL[ply]=[m]+KL.get(ply,[])[:1];HS[m]=HS.get(m,0)+d*d
    break
  PTH.pop()
  if bst==-10**6:return -100000+ply if att(KP[W],-W) else 0
@@ -142,12 +141,12 @@ def main():
   gm=g["game"];lm=g["legal_moves"]
   if gm!=G:G=gm;REP.clear()
   parse(g["fen"]);REP.add((tuple(B),W,CA,EP))
-  ND=TB=0;TT.clear();PTH.clear()
+  ND=TB=0;TT.clear();PTH.clear();HS.clear()
   for d in range(1,80):
    try:neg(d,-10**6,10**6,0)
-   except X:break
+   except:break
   m=TB;s=m&127;t=(m>>7)&127
-  u=chr(97+(s&7))+str(8-s//16)+chr(97+(t&7))+str(8-t//16)+("  nbrq"[m>>14] if m>>14 else "")
+  u=f"{chr(97+(s&7))}{8-s//16}{chr(97+(t&7))}{8-t//16}"+("  nbrq"[m>>14]if m>>14 else"")
   if u not in lm:u=lm[0]
   g=post("/move",{"game":gm,"move":u})
 if __name__=="__main__":main()
