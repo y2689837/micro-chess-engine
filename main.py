@@ -71,7 +71,7 @@ def sk(m,tm):
 def neg(d,a,b,ply):
  global ND,TB,W,CA,EP
  ND+=1
- if ND>=6e4:1/0
+ if ND>=9e4:1/0
  k=(tuple(B),W,CA,EP)
  if ply and k in REP:return 0
  ent=TT.get(k);tm=ent and ent[3]
